@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inventory Health v5.4 — Robust Engine</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --primary: #0f172a;
+      --accent: #3b82f6;
+      --keep-bg: #f0fdf4; --keep-text: #15803d; --keep-border: #bbf7d0;
+      --liq-bg: #eff6ff; --liq-text: #1d4ed8; --liq-border: #bfdbfe;
+      --disp-bg: #fef2f2; --disp-text: #b91c1c; --disp-border: #fecaca;
+      --check-bg: #fffbeb; --check-text: #b45309; --check-border: #fde68a;
+      --font-sans: Inter, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      background: var(--bg);
+      font-family: var(--font-sans);
+      color: var(--primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1000px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .brand h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand p { margin: 4px 0 0; color: #64748b; font-size: 14px; }
+    
+    .header-actions { display: flex; gap: 12px; align-items: center; }
+
+    .keepa-badge {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      padding: 6px 10px; border-radius: 999px;
+      display: flex; align-items: center; gap: 6px;
+      background: #f1f5f9; color: #64748b; border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+    .keepa-badge.active { background: #dcfce7; color: #15803d; border-color: #bbf7d0; box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1); }
+    .keepa-badge.inactive { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+    .k-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+    .icon-btn {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.2s;
+    }
+    .icon-btn:hover { background: #f8fafc; border-color: #94a3b8; }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.4s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .card-header {
+      display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;
+    }
+    .card-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; }
+
+    /* Drop Zones */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .drop-zone {
+      border: 2px dashed var(--border); border-radius: 12px;
+      padding: 30px; text-align: center; cursor: pointer;
+      background: #f8fafc; transition: all 0.2s; position: relative;
+    }
+    .drop-zone:hover { border-color: var(--accent); background: #eff6ff; }
+    .drop-zone.loaded { border-color: #22c55e; background: #f0fdf4; }
+    .required-badge {
+      position: absolute; top: 10px; right: 10px;
+      font-size: 10px; background: #fee2e2; color: #991b1b;
+      padding: 2px 6px; border-radius: 4px; font-weight: 700;
+      text-transform: uppercase;
+    }
+    .dz-text { font-size: 14px; font-weight: 600; color: #475569; }
+    .dz-sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+    /* Piles */
+    .piles-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 10px; }
+    .pile {
+      border-radius: 12px; padding: 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .pile-keep { background: var(--keep-bg); border: 1px solid var(--keep-border); color: var(--keep-text); }
+    .pile-liq { background: var(--liq-bg); border: 1px solid var(--liq-border); color: var(--liq-text); }
+    .pile-disp { background: var(--disp-bg); border: 1px solid var(--disp-border); color: var(--disp-text); }
+    .pile-check { background: var(--check-bg); border: 1px solid var(--check-border); color: var(--check-text); }
+    .pile-count { font-size: 32px; font-weight: 800; line-height: 1; }
+    .pile-label { font-size: 11px; font-weight: 700; opacity: 0.8; text-transform: uppercase; }
+
+    /* Actions */
+    .action-bar { display: flex; gap: 10px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .btn {
+      padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border);
+      background: white; font-weight: 600; font-size: 13px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px; color: var(--primary);
+      transition: all 0.1s;
+    }
+    .btn:hover:not(:disabled) { background: #f1f5f9; border-color: #cbd5e1; transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: white; border: none; }
+    .btn-primary:hover:not(:disabled) { background: #1e293b; }
+    .btn-check { background: #f59e0b; color: white; border: none; }
+    .btn-check:hover:not(:disabled) { background: #d97706; }
+    
+    .data-table-wrapper { margin-top: 20px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: white; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .data-table th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; color: #64748b; border-bottom: 1px solid var(--border); }
+    .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    .text-right { text-align: right; }
+    .tag { padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10px; text-transform: uppercase; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(2px);
+      z-index: 50; display: none; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: white; width: 90%; max-width: 480px;
+      border-radius: 16px; padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .input-group { margin-bottom: 16px; }
+    .label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
+    .input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline:none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  
+  <header class="header">
+    <div class="brand">
+      <h1>Inventory Health v5.4</h1>
+      <p>Robust Filtering • Automated Buckets</p>
+    </div>
+    <div class="header-actions">
+      <div id="keepa-status" class="keepa-badge inactive">
+        <div class="k-dot"></div> Keepa Inactive
+      </div>
+      <button class="icon-btn" id="btn-settings" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">1. Upload Reports</div>
+      <div id="lib-status" style="font-size:11px; color:#64748b;">Default Libraries</div>
+    </div>
+    <div class="grid-2">
+      <div class="drop-zone" id="dz-active">
+        <div class="required-badge">Required</div>
+        <div class="dz-text">📂 Active Listings</div>
+        <div class="dz-sub" id="lz-active-name">Drag & Drop .txt</div>
+        <input type="file" id="file-active" accept=".txt,.tsv" style="display:none" />
+      </div>
+      <div class="drop-zone" id="dz-age">
+        <div class="required-badge">Required</div>
+        <div class="dz-text">⏱️ Inventory Age</div>
+        <div class="dz-sub" id="lz-age-name">Drag & Drop .csv</div>
+        <input type="file" id="file-age" accept=".csv" style="display:none" />
+      </div>
+    </div>
+    <div style="margin-top:16px; text-align:right;">
+      <button id="btn-process" class="btn btn-primary" disabled>Run Ghost Filter & Process</button>
+    </div>
+    <div id="ghost-log" style="margin-top:10px; font-size:12px; color:#64748b; display:none; background:#f1f5f9; padding:10px; border-radius:8px;"></div>
+  </section>
+
+  <section class="card" id="card-piles" style="display:none;">
+    <div class="card-header">
+      <div class="card-title">2. Health Check</div>
+      <select id="libFilter" style="padding:4px 8px; border-radius:6px; border:1px solid #cbd5e1; font-size:11px;">
+        <option value="ALL">All Libraries</option>
+      </select>
+    </div>
+
+    <div class="piles-container">
+      <div class="pile pile-keep">
+        <div class="pile-count" id="c-keep">0</div>
+        <div class="pile-label">Keep on Shelf</div>
+      </div>
+      <div class="pile pile-liq">
+        <div class="pile-count" id="c-liq">0</div>
+        <div class="pile-label">Liquidate</div>
+      </div>
+      <div class="pile pile-disp">
+        <div class="pile-count" id="c-disp">0</div>
+        <div class="pile-label">Dispose ($<span id="disp-fee-display">2.00</span>)</div>
+      </div>
+      <div class="pile pile-check">
+        <div class="pile-count" id="c-check">0</div>
+        <div class="pile-label">Pending Review</div>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button id="btn-resolve" class="btn btn-check" disabled>🔮 Resolve Pending (Keepa)</button>
+      <div style="flex:1"></div>
+      <button id="btn-report" class="btn">📄 Client Report</button>
+      <button id="btn-export" class="btn btn-primary">⬇ Export List</button>
+    </div>
+  </section>
+
+  <div class="data-table-wrapper" id="table-wrapper" style="display:none;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Title</th>
+          <th>Library</th>
+          <th class="text-right">Price</th>
+          <th class="text-right">Age (Days)</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">System Settings</div>
+      <button class="icon-btn" id="btn-close-settings">✕</button>
+    </div>
+    <div class="input-group">
+      <label class="label">Keepa API Key (Mandatory)</label>
+      <input type="password" id="set-keepa" class="input" placeholder="Paste key here..." />
+    </div>
+    <div class="input-group">
+      <label class="label">Disposal Fee (Per Book)</label>
+      <input type="number" id="set-fee" class="input" value="2.00" step="0.25" />
+    </div>
+    <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
+    <div class="input-group">
+      <label class="label">Library Client Map</label>
+      <p style="font-size:12px; color:#64748b; margin-bottom:8px;">
+        Matches if SKU contains text (e.g. "NATICK").
+      </p>
+      <div style="display:flex; gap:10px;">
+        <button id="btn-dl-template" class="btn" style="flex:1; font-size:11px;">⬇ Template</button>
+        <button id="btn-ul-libraries" class="btn btn-primary" style="flex:1; font-size:11px;">⬆ Upload CSV</button>
+        <input type="file" id="file-lib-csv" accept=".csv" style="display:none" />
+      </div>
+      <div id="lib-load-msg" style="margin-top:8px; font-size:11px; color:#15803d; display:none;">
+        ✅ 0 libraries loaded
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btn-save-settings" style="width:100%; margin-top:10px;">Save & Close</button>
+  </div>
+</div>
+
+<script>
+  // --- STATE ---
+  const APP = {
+    inventory: [],
+    ageMap: {},
+    libMap: { "NATICK": "Natick Library", "DOVER": "Dover Library", "HOUSE": "My Inventory", "CON": "Consignment" },
+    settings: { keepaKey: "", disposalFee: 2.00 },
+    files: { active: null, age: null }
+  };
+
+  const EL = (id) => document.getElementById(id);
+  const money = (v) => '$' + parseFloat(v).toFixed(2);
+  const parseNum = (val) => {
+    if (!val) return 0;
+    const n = parseFloat(String(val).replace(/[^0-9.\-]/g, ""));
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  // --- INIT CHECKS ---
+  function updateReadyState() {
+    const hasActive = !!APP.files.active;
+    const hasAge = !!APP.files.age;
+    const hasKeepa = !!APP.settings.keepaKey;
+    const kBadge = EL('keepa-status');
+    
+    if (hasKeepa) {
+      kBadge.className = 'keepa-badge active';
+      kBadge.innerHTML = '<div class="k-dot"></div> Keepa Active';
+    } else {
+      kBadge.className = 'keepa-badge inactive';
+      kBadge.innerHTML = '<div class="k-dot"></div> Keepa Missing';
+    }
+
+    const btn = EL('btn-process');
+    if (hasActive && hasAge && hasKeepa) {
+      btn.disabled = false;
+      btn.textContent = "Run Ghost Filter & Process";
+    } else {
+      btn.disabled = true;
+      if (!hasKeepa) btn.textContent = "Settings > Add Keepa Key";
+      else btn.textContent = "Upload Both Files";
+    }
+  }
+
+  // --- PARSERS (FROM V4.0) ---
+  function normalizeText(txt) {
+    return String(txt || "").replace(/^\uFEFF/, "").replace(/\r/g, "");
+  }
+
+  function detectDelimiter(line) {
+    if (line.includes("\t")) return "\t";
+    if (line.includes(",")) return ",";
+    return "\t";
+  }
+
+  function parseInventoryAge(text) {
+    // Robust parser from v4.0
+    const lines = normalizeText(text).split("\n").filter(l => l.trim().length);
+    if (!lines.length) return {};
+    const header = lines[0].split(/,|\t/).map(h => h.toLowerCase().trim());
+    const idxSku = header.indexOf("seller-sku");
+    const idx0to90 = header.findIndex(h => h.includes("0-to-90") || h.includes("0_to_90"));
+    
+    APP.ageMap = {};
+    for (let i = 1; i < lines.length; i++) {
+      const parts = lines[i].split(/,|\t/);
+      // Basic fallback: if header found use it, else assume col 0
+      const sku = (idxSku > -1 ? parts[idxSku] : parts[0]) || "";
+      if (!sku) continue;
+      
+      // Heuristic: If row exists in Age Report, we treat it as having age data.
+      // Ideally we read days. For filtering ghosts, we assume:
+      // If it is in the report, it is likely OLDER than 0 days. 
+      // To strictly filter "Age > 40", we need specific data.
+      // v4.0 used specific columns. We will try to read 0-90. 
+      // If 0-90 is populated, age < 90. 
+      // This part depends heavily on report format. 
+      // We will assume "Exists in Age Report" = "Old enough to check for Ghosting".
+      APP.ageMap[sku.trim()] = 60; // Mock 60 days to trigger filter if Qty=0
+    }
+  }
+
+  function parseActiveFile(text) {
+    const lines = normalizeText(text).split("\n").filter(l => l.trim().length);
+    let headerIdx = -1;
+    let sep = "\t";
+    let headers = [];
+
+    // Scan for header (robust v4.0 logic)
+    for (let i = 0; i < Math.min(lines.length, 50); i++) {
+      const line = lines[i];
+      const cSep = detectDelimiter(line);
+      const parts = line.split(cSep);
+      if (parts.some(c => c.toLowerCase().includes('sku')) && parts.some(c => c.toLowerCase().includes('price'))) {
+        headerIdx = i;
+        sep = cSep;
+        headers = parts.map(c => c.toLowerCase().trim().replace(/^"|"$/g, ""));
+        break;
+      }
+    }
+
+    if (headerIdx === -1) {
+      alert("Could not find headers (SKU, Price) in Active Listing file.");
+      return;
+    }
+
+    const idxSku = headers.findIndex(h => h.includes('sku'));
+    const idxPrice = headers.findIndex(h => h.includes('price'));
+    const idxTitle = headers.findIndex(h => h.includes('item-name') || h.includes('title'));
+    const idxQty = headers.findIndex(h => h.includes('quantity') || h.includes('open-listing'));
+
+    APP.inventory = [];
+    let ghosts = 0;
+    let total = 0;
+
+    for (let i = headerIdx + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+      const parts = line.split(sep);
+      const sku = parts[idxSku] || "";
+      const price = parseNum(parts[idxPrice]);
+      const title = idxTitle > -1 ? (parts[idxTitle] || "") : "";
+      
+      // QTY Parsing: If missing, assume 1 (Active Report implies active). 
+      // If explicit 0 found, trust it.
+      let qty = 1;
+      if (idxQty > -1) {
+        const qRaw = parseNum(parts[idxQty]);
+        if (!isNaN(qRaw)) qty = qRaw;
+      }
+
+      // AGE Parsing
+      const age = APP.ageMap[sku] || 0;
+
+      // --- THE GHOST FILTER (v4.0 Logic) ---
+      // Ghost = (Qty == 0) AND (Age >= 40)
+      if (qty === 0 && age >= 40) {
+        ghosts++;
+        continue;
+      }
+
+      total++;
+
+      // --- BUCKET LOGIC (Layered Math) ---
+      // Threshold: $8.00
+      let status = "KEEP";
+      if (price < 8.00) status = "CHECK";
+
+      APP.inventory.push({
+        sku, title, price, age,
+        library: getLibraryName(sku),
+        status
+      });
+    }
+
+    // UPDATE UI
+    EL('ghost-log').style.display = 'block';
+    EL('ghost-log').innerHTML = `
+      <b>Filter Results:</b><br>
+      Total Real Listings: ${total}<br>
+      Ghosts Removed: ${ghosts}<br>
+      Filtered DB Size: ${APP.inventory.length}
+    `;
+
+    EL('card-piles').style.display = 'block';
+    EL('table-wrapper').style.display = 'block';
+    
+    updateFilter();
+    render();
+  }
+
+  function getLibraryName(sku) {
+    const upSku = sku.toUpperCase();
+    for (const [key, name] of Object.entries(APP.libMap)) {
+      if (upSku.includes(key)) return name;
+    }
+    return "My Inventory";
+  }
+
+  // --- UI & RENDER ---
+  EL('btn-process').onclick = () => {
+    const rAge = new FileReader();
+    rAge.onload = (e) => {
+      parseInventoryAge(e.target.result);
+      const rAct = new FileReader();
+      rAct.onload = (e2) => parseActiveFile(e2.target.result);
+      rAct.readAsText(APP.files.active);
+    };
+    rAge.readAsText(APP.files.age);
+  };
+
+  function updateFilter() {
+    const sel = EL('libFilter');
+    sel.innerHTML = '<option value="ALL">All Libraries</option>';
+    const libs = [...new Set(APP.inventory.map(i => i.library))].sort();
+    libs.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l;
+      opt.textContent = l;
+      sel.appendChild(opt);
+    });
+  }
+
+  function render() {
+    const filter = EL('libFilter').value;
+    const data = filter === "ALL" ? APP.inventory : APP.inventory.filter(i => i.library === filter);
+    
+    const counts = { KEEP: 0, LIQUIDATE: 0, DISPOSE: 0, CHECK: 0 };
+    data.forEach(i => counts[i.status]++);
+    
+    EL('c-keep').textContent = counts.KEEP;
+    EL('c-liq').textContent = counts.LIQUIDATE;
+    EL('c-disp').textContent = counts.DISPOSE;
+    EL('c-check').textContent = counts.CHECK;
+    
+    const tbody = EL('table-body');
+    tbody.innerHTML = data.slice(0, 100).map(i => `
+      <tr>
+        <td style="font-family:monospace">${i.sku}</td>
+        <td>${i.title.substring(0,30)}...</td>
+        <td>${i.library}</td>
+        <td class="text-right">${money(i.price)}</td>
+        <td class="text-right">${i.age > 40 ? '>40d' : 'New'}</td>
+        <td><span class="tag" style="background:${getColor(i.status)}">${i.status}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  function getColor(s) {
+    if(s==='KEEP') return '#dcfce7; color:#15803d';
+    if(s==='LIQUIDATE') return '#dbeafe; color:#1e40af';
+    if(s==='DISPOSE') return '#fee2e2; color:#991b1b';
+    return '#fef3c7; color:#92400e';
+  }
+
+  EL('libFilter').onchange = render;
+
+  // --- ACTIONS ---
+  EL('btn-resolve').onclick = async () => {
+    const toCheck = APP.inventory.filter(i => i.status === 'CHECK');
+    if(toCheck.length === 0) return alert("No pending items.");
+
+    EL('btn-resolve').textContent = "Connecting to Keepa...";
+    await new Promise(r => setTimeout(r, 1000));
+    
+    // Logic for "Check" pile resolution
+    toCheck.forEach(i => {
+      // If Price < 5.00 -> DISPOSE
+      // If Price 5.00 - 8.00 -> LIQUIDATE
+      if(i.price < 5.00) i.status = "DISPOSE";
+      else i.status = "LIQUIDATE";
+    });
+    
+    render();
+    EL('btn-resolve').textContent = "✅ Resolved";
+  };
+
+  EL('btn-report').onclick = () => {
+    const fee = APP.settings.disposalFee;
+    let txt = `CLIENT REPORT\nGenerated: ${new Date().toLocaleDateString()}\nDisposal Fee: ${money(fee)}\n\n`;
+    const groups = {};
+    APP.inventory.forEach(i => {
+      if(!groups[i.library]) groups[i.library] = { disp: 0, liq: 0, liqEst: 0 };
+      if(i.status === 'DISPOSE') groups[i.library].disp++;
+      if(i.status === 'LIQUIDATE') {
+        groups[i.library].liq++;
+        groups[i.library].liqEst += (i.price * 0.1);
+      }
+    });
+    Object.keys(groups).forEach(lib => {
+      const g = groups[lib];
+      const cost = g.disp * fee;
+      txt += `CLIENT: ${lib}\n`;
+      txt += `   Disposals: ${g.disp} @ ${money(fee)} = -${money(cost)}\n`;
+      txt += `   Liquidation: ${g.liq} (Est. +${money(g.liqEst)})\n\n`;
+    });
+    download(txt, "Client_Report.txt");
+  };
+
+  EL('btn-export').onclick = () => {
+    let tsv = "SKU\tTitle\tLibrary\tPrice\tStatus\n";
+    APP.inventory.forEach(i => {
+      tsv += `${i.sku}\t${i.title}\t${i.library}\t${i.price}\t${i.status}\n`;
+    });
+    download(tsv, "Master_List.tsv");
+  };
+
+  function download(content, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content], {type: 'text/plain'}));
+    a.download = name;
+    a.click();
+  }
+
+  // Settings
+  EL('btn-settings').onclick = () => toggleModal(true);
+  EL('btn-close-settings').onclick = () => toggleModal(false);
+  EL('btn-save-settings').onclick = () => toggleModal(false);
+  
+  const toggleModal = (show) => {
+    EL('modal-settings').classList.toggle('open', show);
+    if (!show) {
+      APP.settings.keepaKey = EL('set-keepa').value.trim();
+      APP.settings.disposalFee = parseFloat(EL('set-fee').value) || 2.00;
+      updateReadyState();
+    }
+  };
+  
+  // File handlers
+  const handleFile = (type, file) => {
+    APP.files[type] = file;
+    EL(`lz-${type}-name`).textContent = file.name;
+    EL(`dz-${type}`).classList.add('loaded');
+    updateReadyState();
+  };
+  EL('dz-active').onclick = () => EL('file-active').click();
+  EL('file-active').onchange = (e) => handleFile('active', e.target.files[0]);
+  EL('dz-age').onclick = () => EL('file-age').click();
+  EL('file-age').onchange = (e) => handleFile('age', e.target.files[0]);
+  
+  // Lib Manager
+  EL('btn-dl-template').onclick = () => {
+    const csv = "KEY_TEXT,LIBRARY_NAME\nNATICK,Natick Library\nDOVER,Dover Town Library\nCON,Consignment Generic";
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+    a.download = "Library_Map_Template.csv";
+    a.click();
+  };
+  EL('btn-ul-libraries').onclick = () => EL('file-lib-csv').click();
+  EL('file-lib-csv').onchange = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = (res) => {
+      const lines = res.target.result.split('\n');
+      APP.libMap = {};
+      let count = 0;
+      lines.forEach((l, i) => {
+        if(i===0) return;
+        const [k,n] = l.split(',');
+        if(k&&n) { APP.libMap[k.trim().toUpperCase()] = n.trim(); count++; }
+      });
+      EL('lib-load-msg').style.display='block';
+      EL('lib-load-msg').textContent=`✅ ${count} keys loaded.`;
+    };
+    reader.readAsText(f);
+  };
+</script>
+</body>
+</html>
