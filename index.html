@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Product Editor v3.2 (Final CORS Fix)</title>
+    <title>Pro Product Editor v3.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://js.puter.com/v2/"></script>
     <style>
@@ -12,36 +12,44 @@
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f2; padding: 20px; color: #111; }
         .container { max-width: 1600px; margin: 0 auto; }
         header { background: #232f3e; color: white; padding: 15px 30px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        
         .global-controls { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
         .slider-stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+        
         .drop-zone { background: #fff; border: 2px dashed #adb5bd; border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; margin-bottom: 20px; }
+        
         .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
         .image-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; }
+        
         .preview-container { width: 100%; height: 380px; background: #eee; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: crosshair; }
         .preview-container canvas { max-width: 100%; max-height: 100%; object-fit: contain; z-index: 1; }
+        
         .toolbar { position: absolute; top: 10px; left: 10px; z-index: 10; display: flex; gap: 5px; }
         .tool-btn { background: rgba(0,0,0,0.8); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; }
         .tool-btn.active { background: var(--amazon); color: black; }
+
         .editor-panel { padding: 15px; background: #fff; border-top: 1px solid #eee; }
         .control-group { margin-bottom: 8px; }
         .control-group label { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: #555; }
+        
         button { padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.2s; }
-        button:hover { opacity: 0.9; }
         .btn-clean { background: var(--amazon); color: #111; }
         .btn-bg { background: var(--primary); color: white; }
-        .status-tag { position: absolute; top: 10px; right: 10px; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; color: white; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
+        .status-tag { position: absolute; top: 10px; right: 10px; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; color: white; z-index: 10; }
+
+        /* Fixed Modal Styling */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; }
+        .modal.active { display: flex !important; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h2>Pro Product Editor v3.2</h2>
+        <h2>Pro Product Editor v3.3</h2>
         <div>
-            <button onclick="document.getElementById('apiModal').classList.add('active')" style="background:#444; color:white;">⚙️ API Settings</button>
-            <span id="stats" style="margin-left:15px; font-weight: bold;">0 Photos Loaded</span>
+            <button onclick="toggleModal(true)" style="background:#444; color:white;">⚙️ API Settings</button>
+            <span id="stats" style="margin-left:15px;">0 Photos</span>
         </div>
     </header>
 
@@ -64,7 +72,7 @@
 
     <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
         <h3>Click or Drag Images Here</h3>
-        <p>Optimized for Hugging Face Inference Bypass</p>
+        <p>Pre-resized for API bypass</p>
         <input type="file" id="fileInput" multiple accept="image/*" onchange="handleFiles(this.files)" style="display:none">
     </div>
 
@@ -72,12 +80,11 @@
 </div>
 
 <div class="modal" id="apiModal">
-    <div style="background:white; padding:30px; border-radius:12px; width:450px; text-align: center;">
-        <h3 style="color: #232f3e;">Hugging Face API Access</h3>
-        <p style="font-size: 12px; color: #666; margin: 10px 0;">Enter your token to enable AI background removal.</p>
-        <input type="password" id="apiKeyInput" placeholder="hf_..." style="width:100%; padding:12px; margin:15px 0; border: 1px solid #ccc; border-radius: 6px;">
-        <button class="btn-bg" style="width:100%; padding: 12px;" onclick="saveKey()">Save Token & Close</button>
-        <p style="margin-top: 15px; font-size: 11px;"><a href="https://huggingface.co/settings/tokens" target="_blank" style="color: var(--primary);">Get your token here</a></p>
+    <div style="background:white; padding:30px; border-radius:12px; width:400px; text-align: center;">
+        <h3 style="margin-bottom:10px;">Hugging Face Token</h3>
+        <input type="password" id="apiKeyInput" placeholder="hf_..." style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ccc; border-radius:6px;">
+        <button class="btn-bg" style="width:100%; padding:12px;" onclick="saveKey()">Save & Close</button>
+        <button onclick="toggleModal(false)" style="margin-top:10px; background:none; border:none; color:#666; cursor:pointer; font-size:11px;">Cancel</button>
     </div>
 </div>
 
@@ -85,17 +92,33 @@
     let images = [];
     let apiKey = localStorage.getItem('huggingface_api_token') || '';
 
+    // Fixed Modal Logic
+    function toggleModal(show) {
+        const modal = document.getElementById('apiModal');
+        if (show) {
+            modal.classList.add('active');
+            document.getElementById('apiKeyInput').value = apiKey;
+        } else {
+            modal.classList.remove('active');
+        }
+    }
+
     function saveKey() {
-        apiKey = document.getElementById('apiKeyInput').value.trim();
-        localStorage.setItem('huggingface_api_token', apiKey);
-        document.getElementById('apiModal').classList.remove('active');
+        const inputVal = document.getElementById('apiKeyInput').value.trim();
+        if(inputVal) {
+            apiKey = inputVal;
+            localStorage.setItem('huggingface_api_token', apiKey);
+            toggleModal(false);
+            console.log("Token saved successfully.");
+        } else {
+            alert("Please enter a valid token.");
+        }
     }
 
     async function handleFiles(files) {
         for (const file of Array.from(files)) {
             const reader = new FileReader();
             reader.onload = async (e) => {
-                // Resize for API safety before adding to list
                 const resized = await resizeImage(e.target.result, 2000);
                 const img = { 
                     id: 'img_' + Math.random().toString(36).substr(2, 9), 
@@ -142,7 +165,7 @@
                 <canvas id="canvas-${img.id}"></canvas>
             </div>
             <div class="editor-panel">
-                <div class="control-group"><label>Manual Leveling <span id="v-rot-${img.id}">0°</span></label><input type="range" id="rot-${img.id}" min="-15" max="15" step="0.1" value="0" oninput="updateUI('${img.id}')"></div>
+                <div class="control-group"><label>Straighten <span id="v-rot-${img.id}">0°</span></label><input type="range" id="rot-${img.id}" min="-15" max="15" step="0.1" value="0" oninput="updateUI('${img.id}')"></div>
                 <div class="control-group">
                     <label>Light/Sat/Shadows</label>
                     <div style="display:flex; gap:5px;">
@@ -153,8 +176,8 @@
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-top:10px;">
                     <button class="btn-clean" onclick="cleanPhoto('${img.id}')">🧼 Clean</button>
-                    <button class="btn-bg" onclick="processAI('${img.id}')">✨ Remove BG</button>
-                    <button style="background:#eee; color: #333;" onclick="revert('${img.id}')">Revert</button>
+                    <button class="btn-bg" onclick="processAI('${img.id}')">✨ BG Fix</button>
+                    <button style="background:#eee" onclick="revert('${img.id}')">Revert</button>
                 </div>
             </div>
         `;
@@ -195,6 +218,7 @@
     function updateUI(id) {
         const imgObj = images.find(i => i.id === id);
         const canvas = document.getElementById(`canvas-${id}`);
+        if(!canvas) return;
         const ctx = canvas.getContext('2d');
         const rot = document.getElementById(`rot-${id}`).value, bri = document.getElementById(`bri-${id}`).value;
         const sat = document.getElementById(`sat-${id}`).value, shd = document.getElementById(`shd-${id}`).value;
@@ -214,22 +238,23 @@
     }
 
     async function processAI(id, retryCount = 0) {
-        if(!apiKey) return document.getElementById('apiModal').classList.add('active');
+        if(!apiKey) return toggleModal(true);
         const imgObj = images.find(i => i.id === id);
         const stat = document.getElementById(`stat-${id}`);
-        stat.textContent = 'Proxying AI...'; stat.style.background = var(--amazon);
+        stat.textContent = 'Proxying...';
+        stat.style.background = '#ff9900';
 
         try {
             const blob = await (await fetch(imgObj.original)).blob();
-            // Critical: Puter.js Tunneling
+            // Critical Puter Proxy
             const response = await puter.net.fetch(`https://api-inference.huggingface.co/models/briaai/RMBG-2.0`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${apiKey.trim()}`, 'Content-Type': 'application/octet-stream' },
+                headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/octet-stream' },
                 body: blob
             });
 
             if (response.status === 503 && retryCount < 5) {
-                stat.textContent = `Waking AI (${retryCount + 1})...`;
+                stat.textContent = `AI Loading...`;
                 await new Promise(r => setTimeout(r, 6000));
                 return processAI(id, retryCount + 1);
             }
@@ -240,7 +265,7 @@
             const reader = new FileReader();
             reader.onloadend = () => {
                 imgObj.currentBase = reader.result;
-                stat.textContent = 'Removed BG'; stat.style.background = '#2e7d32';
+                stat.textContent = 'Done'; stat.style.background = '#2e7d32';
                 updateUI(id);
             };
             reader.readAsDataURL(resBlob);
@@ -255,12 +280,12 @@
             out.width = 2000; out.height = 2000;
             const octx = out.getContext('2d');
             octx.fillStyle = "white"; octx.fillRect(0,0,2000,2000);
-            const scale = Math.min(1700/canvas.width, 1700/canvas.height); // 85% Auto-crop
+            const scale = Math.min(1700/canvas.width, 1700/canvas.height); // Auto-crop 85%
             octx.drawImage(canvas, (2000 - canvas.width*scale)/2, (2000 - canvas.height*scale)/2, canvas.width*scale, canvas.height*scale);
             zip.file(imgObj.name.replace(/\.[^/.]+$/, "") + ".jpg", out.toDataURL('image/jpeg', 0.9).split(',')[1], {base64: true});
         }
         zip.generateAsync({type:"blob"}).then(c => {
-            const a = document.createElement('a'); a.href = URL.createObjectURL(c); a.download = "amazon_batch.zip"; a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(c); a.download = "amazon_ready.zip"; a.click();
         });
     }
 
