@@ -3,264 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Batch Product Studio</title>
+    <title>Pro Product Editor v3.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://js.puter.com/v2/"></script>
     <style>
-        :root { --primary: #4285f4; --success: #34a853; --advanced: #8e24aa; }
+        :root { --primary: #007185; --success: #2e7d32; --danger: #d32f2f; --amazon: #ff9900; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: #f1f3f4; padding: 20px; }
-        .container { max-width: 1400px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f2; padding: 20px; color: #111; }
+        .container { max-width: 1600px; margin: 0 auto; }
         
-        header { background: white; padding: 15px 30px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        header { background: #232f3e; color: white; padding: 15px 30px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         
-        /* Master Controls */
-        .global-controls { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; }
-        .slider-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 15px 0; }
+        .global-controls { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        .slider-stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
         
-        /* Drop Zone */
-        .drop-zone { background: white; border: 3px dashed #cbd5e0; border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; margin-bottom: 20px; }
-        .drop-zone:hover { border-color: var(--primary); background: #f8fbff; }
-
-        /* Grid */
-        .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
-        .image-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.08); display: flex; flex-direction: column; position: relative; }
+        .drop-zone { background: #fff; border: 2px dashed #adb5bd; border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; margin-bottom: 20px; }
         
-        .image-preview { width: 100%; height: 280px; display: flex; align-items: center; justify-content: center; background: #e9ecef; position: relative; overflow: hidden; padding: 15px; }
-        .image-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
-
-        .editor-panel { padding: 15px; background: #fafafa; border-top: 1px solid #eee; }
-        .control-group { margin-bottom: 10px; }
-        .control-group label { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; color: #666; margin-bottom: 3px; text-transform: uppercase; }
+        .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+        .image-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
         
-        .btn-group { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: white; border-top: 1px solid #eee; }
-        button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.2s; }
-        .btn-main { background: var(--primary); color: white; }
-        .btn-adv { background: var(--advanced); color: white; }
-        .btn-undo { background: #f1f3f4; color: #3c4043; }
-        .btn-zip { background: #333; color: white; }
+        .preview-container { width: 100%; height: 350px; background: #eee; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .preview-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .compare-btn { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 4px 8px; cursor: pointer; }
         
-        .status-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 10px; border-radius: 20px; font-size: 10px; z-index: 5; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
+        .control-group { margin-bottom: 8px; }
+        .control-group label { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: #555; }
+        
+        .editor-panel { padding: 15px; background: #fff; }
+        .btn-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 10px; }
+        
+        button { padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; }
+        .btn-clean { background: var(--amazon); color: #111; }
+        .btn-bg { background: var(--primary); color: white; }
+        .btn-zip { background: #333; color: white; padding: 12px 25px; font-size: 14px; }
+        .status-tag { position: absolute; top: 10px; right: 10px; padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; color: white; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Pro Batch Product Studio</h1>
-            <div id="stats">0 Images Loaded</div>
-            <button class="btn-main" onclick="document.getElementById('apiModal').classList.add('active')">API Settings</button>
-        </header>
 
-        <div class="global-controls">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <strong>Mass Sync Adjustments</strong>
-                <button class="btn-undo" onclick="massUndo()">↺ Reset All Sliders</button>
-            </div>
-            <div class="slider-grid">
-                <div class="control-group"><label>Straighten</label><input type="range" id="g-rot" min="-45" max="45" step="0.5" value="0" oninput="syncAll('rot', this.value)"></div>
-                <div class="control-group"><label>Lightning</label><input type="range" id="g-bri" min="50" max="150" value="100" oninput="syncAll('bri', this.value)"></div>
-                <div class="control-group"><label>Saturation</label><input type="range" id="g-sat" min="0" max="150" value="100" oninput="syncAll('sat', this.value)"></div>
-                <div class="control-group"><label>Shadow</label><input type="range" id="g-shd" min="0" max="25" value="0" oninput="syncAll('shd', this.value)"></div>
-            </div>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn-main" onclick="batchProcessAI('1.4')">Remove All BG (v1.4)</button>
-                <button class="btn-adv" onclick="batchProcessAI('2.0')">Advanced Redo All (v2.0)</button>
-                <button class="btn-zip" id="zipBtn" onclick="downloadAll()">Download All Processed (ZIP)</button>
-                <button class="btn-undo" style="background:#fee" onclick="location.reload()">Clear Session</button>
+<div class="container">
+    <header>
+        <h2>Pro Product Editor (Amazon Optimized)</h2>
+        <div>
+            <button onclick="document.getElementById('apiModal').classList.add('active')" style="background:#444; color:white;">Settings</button>
+            <span id="stats" style="margin-left:15px;">0 Photos</span>
+        </div>
+    </header>
+
+    <div class="global-controls">
+        <div>
+            <h4 style="margin-bottom:10px;">Batch Actions</h4>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button class="btn-clean" onclick="batchClean()">🧼 One-Click Clean All</button>
+                <button class="btn-bg" onclick="batchProcessAI('2.0')">Remove All BG (v2.0)</button>
+                <button class="btn-zip" onclick="downloadAll()">Download ZIP (2000px White BG)</button>
             </div>
         </div>
-
-        <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
-            <p><strong>Click or Drop Images Here</strong></p>
-            <input type="file" id="fileInput" multiple accept="image/*" onchange="handleFiles(this.files)" style="display:none">
-        </div>
-
-        <div class="image-grid" id="imageGrid"></div>
-    </div>
-
-    <div class="modal" id="apiModal">
-        <div style="background:white; padding:30px; border-radius:12px; width:350px;">
-            <h3>Hugging Face Token</h3>
-            <input type="password" id="apiKeyInput" placeholder="hf_..." style="width:100%; padding:10px; margin:15px 0; border: 1px solid #ddd;">
-            <button class="btn-main" style="width:100%;" onclick="saveKey()">Save & Close</button>
+        <div class="slider-stack">
+            <div class="control-group"><label>Batch Straighten</label><input type="range" id="g-rot" min="-15" max="15" step="0.1" value="0" oninput="syncAll('rot', this.value)"></div>
+            <div class="control-group"><label>Batch Lighting</label><input type="range" id="g-bri" min="80" max="150" value="100" oninput="syncAll('bri', this.value)"></div>
+            <div class="control-group"><label>Batch Saturation</label><input type="range" id="g-sat" min="100" max="180" value="100" oninput="syncAll('sat', this.value)"></div>
+            <div class="control-group"><label>Batch Shadow</label><input type="range" id="g-shd" min="0" max="30" value="0" oninput="syncAll('shd', this.value)"></div>
         </div>
     </div>
 
-    <script>
-        let images = [];
-        let apiKey = localStorage.getItem('huggingface_api_token') || '';
+    <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+        <h3>Drag & Drop Product Photos</h3>
+        <p>Supports RAW-derived JPEGs and PNGs</p>
+        <input type="file" id="fileInput" multiple accept="image/*" onchange="handleFiles(this.files)" style="display:none">
+    </div>
 
-        function saveKey() {
-            apiKey = document.getElementById('apiKeyInput').value.trim();
-            localStorage.setItem('huggingface_api_token', apiKey);
-            document.getElementById('apiModal').classList.remove('active');
-        }
+    <div class="image-grid" id="imageGrid"></div>
+</div>
 
-        async function handleFiles(files) {
-            for (const file of Array.from(files)) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = { id: Date.now() + Math.random(), name: file.name, originalData: e.target.result, processedData: null };
-                    images.push(img);
-                    renderImage(img);
-                    updateStats();
+<div class="modal" id="apiModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:30px; border-radius:8px; width:400px;">
+        <h3>Hugging Face Token</h3>
+        <input type="password" id="apiKeyInput" placeholder="hf_..." style="width:100%; padding:10px; margin:20px 0;">
+        <button class="btn-bg" style="width:100%;" onclick="saveKey()">Save & Continue</button>
+    </div>
+</div>
+
+<script>
+    let images = [];
+    let apiKey = localStorage.getItem('huggingface_api_token') || '';
+
+    function saveKey() {
+        apiKey = document.getElementById('apiKeyInput').value;
+        localStorage.setItem('huggingface_api_token', apiKey);
+        document.getElementById('apiModal').style.display = 'none';
+    }
+
+    async function handleFiles(files) {
+        for (const file of Array.from(files)) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = { 
+                    id: 'img_' + Math.random().toString(36).substr(2, 9), 
+                    name: file.name, 
+                    original: e.target.result, 
+                    processed: null,
+                    isComparing: false
                 };
-                reader.readAsDataURL(file);
-            }
+                images.push(img);
+                renderCard(img);
+            };
+            reader.readAsDataURL(file);
         }
+        document.getElementById('stats').textContent = images.length + ' Photos';
+    }
 
-        function renderImage(img) {
-            const card = document.createElement('div');
-            card.className = 'image-card';
-            card.id = `card-${img.id}`;
-            card.innerHTML = `
-                <div class="image-preview">
-                    <img id="view-${img.id}" src="${img.originalData}">
-                    <div class="status-badge" id="status-${img.id}">Original</div>
+    function renderCard(img) {
+        const grid = document.getElementById('imageGrid');
+        const card = document.createElement('div');
+        card.className = 'image-card';
+        card.id = img.id;
+        card.innerHTML = `
+            <div class="preview-container">
+                <div class="status-tag" id="stat-${img.id}" style="background:#666">Original</div>
+                <img id="view-${img.id}" src="${img.original}">
+                <div class="compare-btn" onmousedown="toggleView('${img.id}', true)" onmouseup="toggleView('${img.id}', false)">Hold to see Original</div>
+            </div>
+            <div class="editor-panel">
+                <div class="control-group"><label>Straighten <span id="v-rot-${img.id}">0°</span></label><input type="range" id="rot-${img.id}" min="-15" max="15" step="0.1" value="0" oninput="applyFilters('${img.id}')"></div>
+                <div class="control-group"><label>Light/Sat/Shadow</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="range" id="bri-${img.id}" min="80" max="150" value="100" oninput="applyFilters('${img.id}')">
+                        <input type="range" id="sat-${img.id}" min="100" max="180" value="100" oninput="applyFilters('${img.id}')">
+                        <input type="range" id="shd-${img.id}" min="0" max="30" value="0" oninput="applyFilters('${img.id}')">
+                    </div>
                 </div>
-                <div class="editor-panel">
-                    <div class="control-group"><label>Straighten <span id="v-rot-${img.id}">0°</span></label><input type="range" id="rot-${img.id}" min="-45" max="45" step="0.5" value="0" oninput="applyFilters('${img.id}')"></div>
-                    <div class="control-group"><label>Light <span id="v-bri-${img.id}">100%</span></label><input type="range" id="bri-${img.id}" min="50" max="150" value="100" oninput="applyFilters('${img.id}')"></div>
-                    <div class="control-group"><label>Saturation <span id="v-sat-${img.id}">100%</span></label><input type="range" id="sat-${img.id}" min="0" max="150" value="100" oninput="applyFilters('${img.id}')"></div>
-                    <div class="control-group"><label>Shadow <span id="v-shd-${img.id}">0px</span></label><input type="range" id="shd-${img.id}" min="0" max="25" value="0" oninput="applyFilters('${img.id}')"></div>
+                <div class="btn-row">
+                    <button class="btn-clean" onclick="cleanPhoto('${img.id}')">🧼 Clean</button>
+                    <button class="btn-bg" onclick="processAI('${img.id}', '2.0')">BG Fix</button>
+                    <button style="background:#eee" onclick="revert('${img.id}')">Revert</button>
                 </div>
-                <div class="btn-group">
-                    <button class="btn-main" onclick="smartCenter('${img.id}')">Center Align</button>
-                    <button class="btn-undo" onclick="revertImage('${img.id}')">Revert</button>
-                </div>
-            `;
-            document.getElementById('imageGrid').appendChild(card);
-        }
+            </div>
+        `;
+        grid.appendChild(card);
+    }
 
-        function syncAll(type, val) {
-            images.forEach(img => {
-                const slider = document.getElementById(`${type}-${img.id}`);
-                if (slider) { slider.value = val; applyFilters(img.id); }
+    function toggleView(id, showOriginal) {
+        const imgObj = images.find(i => i.id === id);
+        const view = document.getElementById(`view-${id}`);
+        view.src = showOriginal ? imgObj.original : (imgObj.processed || imgObj.original);
+    }
+
+    async function cleanPhoto(id) {
+        const imgObj = images.find(i => i.id === id);
+        // Normalize: Boost light slightly, Saturation to 115%, Shadow lift to 10px
+        document.getElementById(`bri-${id}`).value = 110;
+        document.getElementById(`sat-${id}`).value = 120;
+        document.getElementById(`shd-${id}`).value = 8;
+        applyFilters(id);
+    }
+
+    function syncAll(type, val) {
+        images.forEach(img => {
+            document.getElementById(`${type}-${img.id}`).value = val;
+            applyFilters(img.id);
+        });
+    }
+
+    async function applyFilters(id) {
+        const imgObj = images.find(i => i.id === id);
+        const rot = document.getElementById(`rot-${id}`).value;
+        const bri = document.getElementById(`bri-${id}`).value;
+        const sat = document.getElementById(`sat-${id}`).value;
+        const shd = document.getElementById(`shd-${id}`).value;
+
+        document.getElementById(`v-rot-${id}`).textContent = rot + '°';
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const tempImg = new Image();
+        
+        tempImg.onload = () => {
+            canvas.width = tempImg.width;
+            canvas.height = tempImg.height;
+            ctx.filter = `brightness(${bri}%) saturate(${sat}%) drop-shadow(0 ${shd}px ${shd}px rgba(0,0,0,0.3))`;
+            ctx.translate(canvas.width/2, canvas.height/2);
+            ctx.rotate(rot * Math.PI / 180);
+            ctx.drawImage(tempImg, -tempImg.width/2, -tempImg.height/2);
+            document.getElementById(`view-${id}`).src = canvas.toDataURL();
+        };
+        tempImg.src = imgObj.processed || imgObj.original;
+    }
+
+    async function processAI(id, version, retryCount = 0) {
+        if(!apiKey) return document.getElementById('apiModal').style.display = 'flex';
+        
+        const imgObj = images.find(i => i.id === id);
+        const model = version === '2.0' ? 'briaai/RMBG-2.0' : 'briaai/RMBG-1.4';
+        const stat = document.getElementById(`stat-${id}`);
+        stat.textContent = 'Removing BG...';
+        stat.style.background = '#ff9900';
+
+        try {
+            const imageBlob = await (await fetch(imgObj.original)).blob();
+            // Use puter.net.fetch to bypass CORS
+            const response = await puter.net.fetch(`https://api-inference.huggingface.co/models/${model}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/octet-stream' },
+                body: imageBlob
             });
-        }
 
-        function massUndo() {
-            images.forEach(img => revertImage(img.id));
-            ['rot', 'bri', 'sat', 'shd'].forEach(t => document.getElementById(`g-${t}`).value = (t === 'bri' || t === 'sat') ? 100 : 0);
-        }
-
-        async function applyFilters(id) {
-            const imgObj = images.find(i => i.id == id);
-            const rot = document.getElementById(`rot-${id}`).value;
-            const bri = document.getElementById(`bri-${id}`).value;
-            const sat = document.getElementById(`sat-${id}`).value;
-            const shd = document.getElementById(`shd-${id}`).value;
-
-            document.getElementById(`v-rot-${id}`).textContent = rot + '°';
-            document.getElementById(`v-bri-${id}`).textContent = bri + '%';
-            document.getElementById(`v-sat-${id}`).textContent = sat + '%';
-            document.getElementById(`v-shd-${id}`).textContent = shd + 'px';
-
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const tempImg = new Image();
-            tempImg.onload = () => {
-                canvas.width = tempImg.width; canvas.height = tempImg.height;
-                ctx.filter = `brightness(${bri}%) saturate(${sat}%) drop-shadow(0 ${shd}px 8px rgba(0,0,0,0.3))`;
-                ctx.translate(canvas.width/2, canvas.height/2);
-                ctx.rotate(rot * Math.PI / 180);
-                ctx.drawImage(tempImg, -tempImg.width/2, -tempImg.height/2);
-                document.getElementById(`view-${id}`).src = canvas.toDataURL();
-            };
-            tempImg.src = imgObj.processedData || imgObj.originalData;
-        }
-
-        async function smartCenter(id) {
-            const imgObj = images.find(i => i.id == id);
-            const view = document.getElementById(`view-${id}`);
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const tempImg = new Image();
-            tempImg.onload = () => {
-                canvas.width = 1200; canvas.height = 1200;
-                ctx.fillStyle = "white"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-                const scale = Math.min(canvas.width / tempImg.width, canvas.height / tempImg.height) * 0.85;
-                const x = (canvas.width - tempImg.width * scale) / 2;
-                const y = (canvas.height - tempImg.height * scale) / 2;
-                ctx.drawImage(tempImg, x, y, tempImg.width * scale, tempImg.height * scale);
-                const centered = canvas.toDataURL();
-                if(imgObj.processedData) imgObj.processedData = centered;
-                view.src = centered;
-            };
-            tempImg.src = view.src;
-        }
-
-        async function batchProcessAI(version) {
-            if(!apiKey) return document.getElementById('apiModal').classList.add('active');
-            for(let img of images) await processAI(img.id, version);
-        }
-
-        async function processAI(id, version, retryCount = 0) {
-            const imgObj = images.find(i => i.id == id);
-            const model = version === '2.0' ? 'briaai/RMBG-2.0' : 'briaai/RMBG-1.4';
-            document.getElementById(`status-${id}`).textContent = 'AI Processing...';
-
-            try {
-                const response = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${apiKey}` },
-                    body: await (await fetch(imgObj.originalData)).blob()
-                });
-
-                if (response.status === 503 && retryCount < 5) {
-                    await new Promise(r => setTimeout(r, 4000));
-                    return processAI(id, version, retryCount + 1);
-                }
-
-                const blob = await response.blob();
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    imgObj.processedData = reader.result;
-                    document.getElementById(`view-${id}`).src = reader.result;
-                    document.getElementById(`status-${id}`).textContent = `Ready (v${version})`;
-                    updateStats();
-                };
-                reader.readAsDataURL(blob);
-            } catch (e) { document.getElementById(`status-${id}`).textContent = 'API Blocked - Use Live Server'; }
-        }
-
-        async function downloadAll() {
-            const zip = new JSZip();
-            const zipBtn = document.getElementById('zipBtn');
-            const processedImages = images.filter(img => img.processedData);
-            
-            if (processedImages.length === 0) return alert("Nothing processed yet!");
-
-            for (let i = 0; i < processedImages.length; i++) {
-                const img = processedImages[i];
-                zipBtn.textContent = `Zipping ${i+1}/${processedImages.length}...`;
-                const data = document.getElementById(`view-${img.id}`).src;
-                const base64Data = data.split(',')[1];
-                zip.file(`processed_${img.name.split('.')[0]}.png`, base64Data, { base64: true });
+            if (response.status === 503 && retryCount < 3) {
+                await new Promise(r => setTimeout(r, 5000));
+                return processAI(id, version, retryCount + 1);
             }
 
-            const content = await zip.generateAsync({ type: "blob" });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(content);
-            link.download = `batch_products_${Date.now()}.zip`;
-            link.click();
-            zipBtn.textContent = "Download All Processed (ZIP)";
+            const blob = await response.blob();
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                imgObj.processed = reader.result;
+                stat.textContent = 'Transparent';
+                stat.style.background = '#2e7d32';
+                applyFilters(id); // Re-apply current rotation/light to the new BG-less image
+            };
+            reader.readAsDataURL(blob);
+        } catch (e) {
+            stat.textContent = 'API Error';
+            stat.style.background = 'red';
         }
+    }
 
-        function revertImage(id) {
-            const imgObj = images.find(i => i.id == id);
-            imgObj.processedData = null;
-            document.getElementById(`view-${id}`).src = imgObj.originalData;
-            document.getElementById(`status-${id}`).textContent = 'Original';
-            ['rot', 'bri', 'sat', 'shd'].forEach(t => document.getElementById(`${t}-${id}`).value = (t === 'bri' || t === 'sat') ? 100 : 0);
-            applyFilters(id);
+    async function downloadAll() {
+        const zip = new JSZip();
+        for(let img of images) {
+            const finalCanvas = document.createElement('canvas');
+            const size = 2000; // Amazon Recommended Size
+            finalCanvas.width = size;
+            finalCanvas.height = size;
+            const fctx = finalCanvas.getContext('2d');
+            
+            // White Background for Amazon Safety
+            fctx.fillStyle = "white";
+            fctx.fillRect(0,0,size,size);
+            
+            const currentImg = new Image();
+            currentImg.src = document.getElementById(`view-${img.id}`).src;
+            await new Promise(r => currentImg.onload = r);
+            
+            // Calculate "Auto-Crop" fit (contain within 85% of canvas for Amazon compliance)
+            const scale = Math.min((size*0.85)/currentImg.width, (size*0.85)/currentImg.height);
+            const w = currentImg.width * scale;
+            const h = currentImg.height * scale;
+            fctx.drawImage(currentImg, (size-w)/2, (size-h)/2, w, h);
+            
+            const dataUrl = finalCanvas.toDataURL('image/jpeg', 0.9);
+            zip.file(img.name.split('.')[0] + "-main.jpg", dataUrl.split(',')[1], {base64: true});
         }
+        zip.generateAsync({type:"blob"}).then(c => {
+            const l = document.createElement('a');
+            l.href = URL.createObjectURL(c);
+            l.download = "amazon_ready_batch.zip";
+            l.click();
+        });
+    }
 
-        function updateStats() {
-            const processedCount = images.filter(i => i.processedData).length;
-            document.getElementById('stats').textContent = `${images.length} Images • ${processedCount} Processed`;
-        }
-    </script>
+    function batchClean() { images.forEach(i => cleanPhoto(i.id)); }
+    function batchProcessAI(v) { images.forEach(i => processAI(i.id, v)); }
+    function revert(id) {
+        const imgObj = images.find(i => i.id === id);
+        imgObj.processed = null;
+        document.getElementById(`view-${id}`).src = imgObj.original;
+        document.getElementById(`stat-${id}`).textContent = 'Original';
+        document.getElementById(`stat-${id}`).style.background = '#666';
+    }
+</script>
+
 </body>
 </html>
